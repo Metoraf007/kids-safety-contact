@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light">
+  <title>Family Portfolio</title>
+
+  <!-- Browser UI colors -->
+  <meta name="theme-color" content="#0f1220" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f3f5fb" media="(prefers-color-scheme: light)">
+
+  <!-- Always-on Bootstrap LTR (baseline styles) -->
+  <link id="bsLTR"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+  <!-- Icons -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+  <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="//images.unsplash.com">
+
+  <style>
+    :root {
+      --bg: #0f1220;
+      --card-bg: #171a2a;
+      --text: #e9ecf1;
+      --muted: #a7b0c0;
+      --accent: #6ea8fe;
+    }
+
+    /* Kill default strip + base sizing */
+    html, body { height: 100%; }
+    body { margin: 0; }
+
+    /* Dark theme gradient (bright spot lowered) */
+    body {
+      background: radial-gradient(1200px 800px at 70% 10%, #1b2036 0%, #0f1220 45%, #0b0d17 100%);
+      color: var(--text);
+      scroll-behavior: smooth;
+    }
+
+    /* Light theme via system preference */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f7fb;
+        --card-bg: #ffffff;
+        --text: #0c1220;
+        --muted: #5b667a;
+        --accent: #0d6efd;
+      }
+      body {
+        background: radial-gradient(1200px 800px at 70% 10%, #f3f5fb 0%, #e9ecf5 55%, #e3e8f3 100%);
+        color: var(--text);
+      }
+    }
+
+    /* Manual theme override */
+    :root[data-theme="light"] {
+      --bg: #f6f7fb; --card-bg: #ffffff; --text: #0c1220; --muted: #5b667a; --accent: #0d6efd;
+    }
+    :root[data-theme="dark"] {
+      --bg: #0f1220; --card-bg: #171a2a; --text: #e9ecf1; --muted: #a7b0c0; --accent: #6ea8fe;
+    }
+    :root[data-theme="light"] body {
+      background: radial-gradient(1200px 800px at 70% 10%, #f3f5fb 0%, #e9ecf5 55%, #e3e8f3 100%);
+    }
+    :root[data-theme="dark"] body {
+      background: radial-gradient(1200px 800px at 70% 10%, #1b2036 0%, #0f1220 45%, #0b0d17 100%);
+    }
+
+    /* Ensure inner scroller paints same bg (no gaps) */
+    html { background-color: #0b0d17; }
+    @media (prefers-color-scheme: light) { html { background-color: #f3f5fb; } }
+    main { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; background: inherit; }
+
+    section.panel {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 4rem 1rem;
+      scroll-snap-align: start;
+      opacity: 0;
+      transform: translateY(22px) scale(0.99);
+      transition: opacity 600ms ease, transform 600ms ease, filter 600ms ease;
+      filter: saturate(0.7);
+    }
+    section.panel.in-view { opacity: 1; transform: translateY(0) scale(1); filter: saturate(1); }
+
+    /* Card */
+    .folio-card {
+      width: min(100%, 1100px);
+      background: color-mix(in oklab, var(--card-bg) 85%, transparent);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+    }
+
+    /* Cover (optional image) */
+    .folio-cover { position: relative; min-height: 260px; background: linear-gradient(120deg, rgba(110,168,254,0.25), rgba(156,109,255,0.2)); }
+    .folio-cover .cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; z-index: 0; }
+    .folio-cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.35)); z-index: 1; }
+
+    .avatar-wrap {
+      position: absolute; inset-inline-start: 2rem; bottom: -70px;
+      width: 140px; height: 140px; border-radius: 50%;
+      border: 4px solid var(--bg); overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+      background: var(--bg); z-index: 2;
+    }
+    .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .folio-body { padding: 6rem 2rem 2rem 2rem; }
+
+    .badge-soft { background: rgba(110,168,254,0.15); color: var(--text); border: 1px solid rgba(110,168,254,0.3); }
+    .kv { color: var(--muted); }
+
+    /* Dot nav */
+    .dot-nav { position: fixed; inset-inline-end: 18px; top: 50%; transform: translateY(-50%); display: grid; gap: 10px; z-index: 50; }
+    .dot-nav a { width: 12px; height: 12px; border-radius: 50%; display: block; background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.35); }
+    .dot-nav a.active, .dot-nav a:hover { background: var(--accent); box-shadow: 0 0 0 4px rgba(110,168,254,0.2); }
+
+    .footer-panel { text-align: center; color: var(--muted); }
+    .contact-btns .btn { min-width: 140px; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+    /* Mobile tuning */
+    @media (max-width: 575.98px) {
+      .avatar-wrap { inset-inline-start: 1rem; width: 110px; height: 110px; bottom: -55px; }
+      .folio-body { padding: 5rem 1rem 1.25rem 1rem; }
+      .contact-btns .btn { min-width: 0; }
+    }
+
+    /* RTL font stack */
+    html[dir="rtl"] body { font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans Hebrew", "Rubik", "Assistant", Arial, sans-serif; }
+
+    /* Floating controls (very high z-index, clear contrast) */
+    .floating-ctl { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 18px); z-index: 9999; }
+#themeToggleWrap { display: block !important; }
+#themeToggle { visibility: visible !important; opacity: 1 !important; }
+    #themeToggleWrap { right: 18px !important; }
+    #langSwitchWrap { left: 18px !important; }
+    .floating-ctl .btn { backdrop-filter: blur(6px); }
+    /* floating-ctl contrast handled by CSS variables above */
+/* === Theme-aware utilities & fixes === */
+  :root {
+    --link: var(--text);
+    --border-weak: color-mix(in oklab, var(--text) 8%, transparent);
+    --border-mid: color-mix(in oklab, var(--text) 16%, transparent);
+    --chip-bg: color-mix(in oklab, var(--text) 10%, transparent);
+    --dot-bg: color-mix(in oklab, var(--text) 18%, transparent);
+    --dot-border: color-mix(in oklab, var(--text) 28%, transparent);
+  }
+
+  /* Cards: enforce readable text/links */
+  .folio-card { color: var(--text) !important; border-color: var(--border-weak) !important; }
+  .folio-card .text-secondary { color: var(--muted) !important; }
+  .link-contrast { color: var(--link) !important; text-decoration: none; }
+  .link-contrast:hover, .link-contrast:focus { opacity: .85; }
+
+  /* Contact box: theme-adaptive (replaces inline rgba style) */
+  .contact-box {
+    background: color-mix(in oklab, var(--card-bg) 90%, transparent) !important;
+    border: 1px solid var(--border-weak) !important;
+  }
+
+  /* Soft badge contrast tuned per theme */
+  .badge-soft {
+    background: color-mix(in oklab, var(--accent) 14%, transparent) !important;
+    color: var(--text) !important;
+    border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent) !important;
+    font-weight: 600;
+  }
+  /* Forced light theme on the root */
+  :root[data-theme="light"] .badge-soft {
+    background: color-mix(in oklab, var(--accent) 12%, white) !important;
+    color: var(--text) !important;
+  }
+
+  /* Auto/system light (and also when no data-theme attribute at all) */
+  @media (prefers-color-scheme: light) {
+    :root[data-theme="auto"] .badge-soft,
+    :root:not([data-theme]) .badge-soft {
+      background: color-mix(in oklab, var(--accent) 12%, white) !important;
+      color: var(--text) !important;
+    }
+  }
+
+  /* Interest chips */
+  .badge-chip {
+    background: var(--chip-bg) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border-weak) !important;
+    font-weight: 500;
+  }
+
+  /* Dot nav readability */
+  .dot-nav a { background: var(--dot-bg) !important; border-color: var(--dot-border) !important; }
+
+  /* Floating controls: outline & bg follow theme */
+  .btn-outline-contrast { color: var(--text) !important; border-color: var(--border-mid) !important; background: transparent; }
+  .floating-ctl .btn { color: var(--text) !important; border-color: var(--border-mid) !important; }
+
+  /* Hebrew hero title in dark: ensure strong contrast + subtle glow */
+  :root[data-theme="dark"] #home h1, html:not([data-theme]) body:not(.force-light) #home h1 {
+    color: var(--text) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+
+  
+/* Floating controls: unified, theme-driven contrast */
+:root { --ctl-bg: rgba(0,0,0,0.50); --ctl-border: rgba(255,255,255,0.45); }
+:root[data-theme="light"] { --ctl-bg: rgba(255,255,255,0.92); --ctl-border: rgba(0,0,0,0.22); }
+/* Auto follows system; JS will update variables too */
+.floating-ctl .btn {
+  background: var(--ctl-bg) !important;
+  border-color: var(--ctl-border) !important;
+  color: var(--text) !important;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+}
+
+  
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  section.panel { transition: none !important; }
+}
+
+  
+/* Print-friendly layout */
+@media print {
+  html, body { background: #fff !important; color: #000 !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dot-nav, #themeToggleWrap, #langSwitchWrap { display: none !important; }
+  .folio-card { box-shadow: none !important; border-color: #ccc !important; background: #fff !important; }
+  .contact-box { background: #fff !important; border-color: #bbb !important; }
+  a[href^="#"]::after { content: ""; } /* remove hash link hints */
+}
+
+    :root { color-scheme: light dark; }
+</style>
+</head>
+<body>
+
+  <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 p-2 bg-body-secondary rounded-2" href="#home">Skip to content</a>
+
+
+  <!-- Theme toggle -->
+  <div id="themeToggleWrap" class="floating-ctl" style="right:18px;">
+    <button id="themeToggle" type="button" class="btn btn-sm btn-outline-light" aria-pressed="false" aria-label="Toggle theme">Auto</button>
+  </div>
+
+  <!-- Language switcher -->
+  <div id="langSwitchWrap" class="floating-ctl" style="left:18px;">
+    <div id="langSwitch" class="btn-group" role="group" aria-label="Language">
+      <button type="button" class="btn btn-sm btn-outline-light" data-lang="en" aria-pressed="false">EN</button>
+      <button type="button" class="btn btn-sm btn-outline-light" data-lang="he" aria-pressed="false">עברית</button>
+    </div>
+  </div>
+
+  <!-- Right-side dot nav -->
+  <nav id="dotNav" class="dot-nav" aria-label="Section navigation"></nav>
+
+  <main id="reference">
+    <!-- Hero -->
+    <section class="panel in-view" id="home" aria-label="Home">
+      <div class="container-lg text-center">
+        <h1 class="display-5 fw-semibold mb-3" data-i18n="hero.title">Our Family</h1>
+        <p class="lead text-secondary" data-i18n="hero.subtitle">Swipe or scroll to meet each member. Tap the WhatsApp button to say hi.</p>
+        <div class="mt-4">
+          <a id="startLink" href="#member-1" class="btn btn-primary btn-lg" data-i18n="hero.start">Start</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Member panels injected here -->
+    <div id="membersRoot"></div>
+
+    <!-- Footer -->
+    <section class="panel footer-panel" id="thanks" aria-label="Thanks">
+      <div class="container-lg">
+        <h2 class="h3 mb-3" data-i18n="footer.title">Thanks for visiting</h2>
+        <p data-i18n="footer.hint">Update anyone’s info by editing the <code>familyMembers</code> array in the script.</p>
+        <a href="#home" class="btn btn-outline-light mt-3" data-i18n="footer.backToTop">Back to top</a>
+      </div>
+    </section>
+  </main>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+          crossorigin="anonymous"></script>
+
+  <script>
+    // ===== THEME (Auto/Light/Dark) =====
+    (function(){
+      const root = document.documentElement;
+      const btn = document.getElementById('themeToggle');
+      const mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)');
+      const saved = localStorage.getItem('theme');
+
+      function prefersLight(){ return mql ? mql.matches : true; }
+
+      setTheme(saved || 'auto');
+      if (mql) mql.addEventListener('change', () => {
+        if (getTheme() === 'auto') updateButtonsContrast(); updateThemeColor(); // keep contrast correct if system flips
+      });
+
+      btn.addEventListener('click', () => { updateCtlVars();
+        const next = { 'auto':'light', 'light':'dark', 'dark':'auto' }[getTheme()];
+        setTheme(next);
+      });
+
+      function getTheme(){ return root.getAttribute('data-theme') || 'auto'; }
+      function setTheme(mode){
+        if (mode === 'auto') root.removeAttribute('data-theme');
+        else root.setAttribute('data-theme', mode);
+        localStorage.setItem('theme', mode);
+        btn.textContent = (mode === 'auto' ? 'Auto' : mode[0].toUpperCase() + mode.slice(1));
+        btn.setAttribute('aria-pressed', mode !== 'auto');
+        updateButtonsContrast();
+      }
+
+      function updateThemeColor(){
+  const mode = (document.documentElement.getAttribute('data-theme') || 'auto');
+  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const effectiveLight = (mode === 'light') || (mode === 'auto' && prefersLight);
+  const metaTags = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
+  const darkColor = '#0f1220';
+  const lightColor = '#f3f5fb';
+  metaTags.forEach(m => m.setAttribute('content', effectiveLight ? lightColor : darkColor));
+}
+
+
+function updateCtlVars(){
+  const root = document.documentElement;
+  const mode = root.getAttribute('data-theme') || 'auto';
+  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const effectiveLight = (mode === 'light') || (mode === 'auto' && prefersLight);
+  root.style.setProperty('--ctl-bg', effectiveLight ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.50)');
+  root.style.setProperty('--ctl-border', effectiveLight ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.45)');
+}
+
+// Make toggle/button outlines readable vs background
+      function updateButtonsContrast(){
+        const effectiveLight = (getTheme() === 'light') || (getTheme() === 'auto' && prefersLight());
+        updateCtlVars();
+        const toggleables = [btn, ...document.querySelectorAll('#langSwitch .btn')];
+        toggleables.forEach(b => {
+          b.classList.remove('btn-outline-light','btn-outline-dark');
+          b.classList.add(effectiveLight ? 'btn-outline-dark' : 'btn-outline-light');
+        });
+      }
+
+      // Expose to i18n to refresh contrast when language changes completes
+      window.__updateButtonsContrast = updateButtonsContrast;
+    })();
+
+    // ===== I18N (EN/HE + RTL dir) =====
+    const translations = {
+      en: {
+        dir: "ltr",
+        "hero.title": "Our Family",
+        "hero.subtitle": "Swipe or scroll to meet each member. Tap the WhatsApp button to say hi.",
+        "hero.start": "Start",
+        "footer.title": "Thanks for visiting",
+        "footer.hint": "Update anyone’s info by editing the familyMembers array in the script.",
+        "footer.backToTop": "Back to top",
+        "contact.title": "Contact",
+        "labels.age": "Age",
+        "actions.whatsapp": "WhatsApp",
+        "actions.next": "Next",
+        "actions.prev": "Prev"
+      },
+      he: {
+        dir: "rtl",
+        "hero.title": "המשפחה שלנו",
+        "hero.subtitle": "גללו כדי להכיר כל אחד. לחצו וואטסאפ כדי להגיד שלום.",
+        "hero.start": "התחלה",
+        "footer.title": "תודה על הביקור",
+        "footer.hint": "מעדכנים פרטים דרך המערך familyMembers בסקריפט.",
+        "footer.backToTop": "חזרה לראש הדף",
+        "contact.title": "יצירת קשר",
+        "labels.age": "גיל",
+        "actions.whatsapp": "וואטסאפ",
+        "actions.next": "הבא",
+        "actions.prev": "הקודם"
+      }
+    };
+
+    let currentLang = (localStorage.getItem('lang') || (navigator.language || 'en').slice(0,2)).toLowerCase();
+    if (!translations[currentLang]) currentLang = 'en';
+
+    // Lazy-load RTL; keep LTR always on
+    let rtlLink = null;
+    function ensureRTLLoaded(cb){
+      if (rtlLink) { rtlLink.disabled = false; cb && cb(); return; }
+      rtlLink = document.createElement('link');
+      rtlLink.rel = 'stylesheet';
+      rtlLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css';
+      rtlLink.onload = () => { cb && cb(); };
+      rtlLink.onerror = () => { console.warn('Failed to load Bootstrap RTL CSS'); cb && cb(); };
+      document.head.appendChild(rtlLink);
+    }
+
+    function setActiveLangButtons(lang){
+      const buttons = document.querySelectorAll('#langSwitch [data-lang]');
+      buttons.forEach(b => {
+        const active = b.getAttribute('data-lang') === lang;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      // Refresh outline vs background after any UI change
+      if (window.__updateButtonsContrast) window.__updateButtonsContrast();
+      try { updateCtlVars(); } catch(e) {}
+      try { updateThemeColor(); } catch(e) {}
+    }
+
+    function applyLang(lang){
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      const meta = translations[lang];
+      const isRTL = meta.dir === 'rtl';
+
+      document.documentElement.lang = lang;
+      document.documentElement.dir = meta.dir || 'ltr';
+      if (isRTL) ensureRTLLoaded(); else if (rtlLink) rtlLink.disabled = true;
+
+      // UI strings
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = translations[lang][key];
+        if (val) el.innerHTML = val;
+      });
+
+      // Preserve where the user is
+      const activeId = (location.hash && location.hash.slice(1)) || 'home';
+
+      renderMembers();
+      buildDotNav();
+      initScrollObservers();
+
+      // Start link target
+      const start = document.getElementById('startLink');
+      const firstId = window.familyMembers?.[0]?.id || 'thanks';
+      if (start) {
+        start.setAttribute('href', '#' + firstId);
+        start.classList.toggle('disabled', !window.familyMembers || window.familyMembers.length === 0);
+      }
+
+      // Activate the correct language button + refresh contrast
+      setActiveLangButtons(lang);
+
+      // Scroll back to current section
+      document.getElementById(activeId)?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }
+
+    // Bind language toggle
+    document.getElementById('langSwitch')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-lang]');
+      if (!btn) return;
+      applyLang(btn.getAttribute('data-lang'));
+    });
+
+    // ===== DATA =====
+    // Replace this with your own const familyMembers = [...] when ready.
+    const sampleMembers = [
+      {
+        id: "member-1",
+        name: "Ari",
+        role_en: "Oldest Kid",
+        role_he: "הילד הבכור",
+        age: 12,
+        interests_en: ["Roblox", "Football", "Comics"],
+        interests_he: ["רובלוקס", "כדורגל", "קומיקס"],
+        email: "ari@example.com",
+        phone: "+972501234567",
+        whatsapp: "+972501234567",
+        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop",
+        cover: "https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=1800&auto=format&fit=crop",
+        coverPosition: "center 35%",
+        about_en: "Always building something. Loves tinkering and team sports.",
+        about_he: "תמיד בונה משהו. אוהב להתעסק ולשחק בקבוצות.",
+        whatsappMessage_en: "Hey Ari! Saw your page 👋 – want to hang out?",
+        whatsappMessage_he: "היי ארי! ראיתי את הדף שלך 👋 – זורם להיפגש?"
+      },
+      {
+        id: "member-2",
+        name: "Noa",
+        role_en: "Middle Kid",
+        role_he: "הילדה האמצעית",
+        age: 9,
+        interests_en: ["Painting", "Music", "Animals"],
+        interests_he: ["ציור", "מוזיקה", "חיות"],
+        email: "noa@example.com",
+        phone: "+972541112233",
+        whatsapp: "+972541112233",
+        photo: "https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6?q=80&w=1200&auto=format&fit=crop",
+        cover: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1800&auto=format&fit=crop",
+        about_en: "Creative soul with a soft spot for dogs and ukuleles.",
+        about_he: "נשמה יצירתית עם חולשה לכלבים ולאוקוללה.",
+        whatsappMessage_en: "Hi Noa! Loved your art 🎨 – keep it up!",
+        whatsappMessage_he: "היי נועה! אהבתי את האמנות שלך 🎨 – תמשיכי ליצור!"
+      },
+      {
+        id: "member-3",
+        name: "Lior",
+        role_en: "Youngest Kid",
+        role_he: "הקטן",
+        age: 6,
+        interests_en: ["Lego", "Dinosaurs"],
+        interests_he: ["לגו", "דינוזאורים"],
+        email: "lior@example.com",
+        phone: "+972502224455",
+        whatsapp: "+972502224455",
+        photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1200&auto=format&fit=crop",
+        cover: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?q=80&w=1800&auto=format&fit=crop",
+        coverPosition: "center 40%",
+        about_en: "Tiny engineer in the making. Rawr means ‘I love you’ in dinosaur.",
+        about_he: "מהנדס קטן בבנייה. נהאאא זה 'אני אוהב אותך' בשפת דינוזאורים.",
+        whatsappMessage_en: "Roar! 🦖 Want to build a Lego city?",
+        whatsappMessage_he: "רואאר! 🦖 בונים עיר לגו?"
+      }
+    ];
+
+    window.familyMembers = Array.isArray(window.familyMembers) ? window.familyMembers : sampleMembers;
+
+    // ===== UTILS =====
+    function L(obj, base){ return obj[`${base}_${currentLang}`] || obj[`${base}_en`] || obj[base] || ''; }
+    function buildWhatsAppHref(number, message) {
+      const encoded = encodeURIComponent(message || "Hi!");
+      const normalized = (number || "").replace(/[^\d+]/g, "");
+      return `https://wa.me/${encodeURIComponent(normalized)}?text=${encoded}`;
+    }
+
+    // ===== RENDER =====
+    function renderMembers(){
+      const root = document.getElementById('membersRoot');
+      root.innerHTML = '';
+
+      (window.familyMembers || []).forEach((m, idx) => {
+        const section = document.createElement('section');
+        section.className = 'panel';
+        section.id = m.id;
+
+        const interests = (m[`interests_${currentLang}`] || m.interests_en || m.interests || [])
+          .map(tag => `<span class="badge badge-chip">${tag}</span>`).join("");
+
+        const coverImg = m.cover
+          ? `<img class="cover-img" src="${m.cover}" alt="${m.name} cover"
+                   loading="lazy" style="${m.coverPosition ? `object-position:${m.coverPosition}` : ''}">`
+          : "";
+
+        section.innerHTML = `
+          <div class="container-lg">
+            <div class="folio-card">
+              <div class="folio-cover">
+                ${coverImg}
+                <div class="avatar-wrap">
+                  <img src="${m.photo}" alt="${m.name}" loading="lazy">
+                </div>
+              </div>
+              <div class="folio-body">
+                <div class="row g-4 align-items-start">
+                  <div class="col-lg-7">
+                    <h2 class="h3 mb-1">${m.name}</h2>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                      <span class="badge rounded-pill badge-soft">${L(m, 'role')}</span>
+                      <span class="kv"><span data-i18n="labels.age">Age</span> ${m.age}</span>
+                    </div>
+                    <p class="mb-3">${L(m, 'about')}</p>
+                    <div class="d-flex flex-wrap gap-2 mb-4">${interests}</div>
+                  </div>
+                  <div class="col-lg-5">
+                    <div class="p-3 p-lg-4 rounded-3 contact-box">
+                      <h3 class="h6 text-uppercase text-secondary mb-3" data-i18n="contact.title">Contact</h3>
+                      <ul class="list-unstyled small mb-4">
+                        <li class="mb-2"><i class="bi bi-envelope me-2 ms-0"></i><a class="link-contrast text-decoration-none" href="mailto:${m.email}">${m.email}</a></li>
+                        <li class="mb-2"><i class="bi bi-telephone me-2 ms-0"></i><a class="link-contrast text-decoration-none" href="tel:${m.phone}">${m.phone}</a></li>
+                      </ul>
+                      <div class="contact-btns d-grid gap-2">
+                        <a class="btn btn-success" target="_blank" rel="noreferrer"
+                           href="${buildWhatsAppHref(m.whatsapp, L(m, 'whatsappMessage'))}">
+                          <i class="bi bi-whatsapp me-1 ms-0"></i> <span data-i18n="actions.whatsapp">WhatsApp</span>
+                        </a>
+                        <a class="btn btn-outline-contrast" href="#${window.familyMembers[idx + 1]?.id || 'thanks'}">
+                          <span data-i18n="actions.next">Next</span> <i class="bi bi-arrow-down-short"></i>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                  <a class="link-contrast text-decoration-none" href="#${window.familyMembers[idx - 1]?.id || 'home'}">
+                    <i class="bi bi-arrow-up-circle me-1"></i> <span data-i18n="actions.prev">Prev</span>
+                  </a>
+                  <a class="link-contrast text-decoration-none" href="#${window.familyMembers[idx + 1]?.id || 'thanks'}">
+                    <span data-i18n="actions.next">Next</span> <i class="bi bi-arrow-down-circle ms-1"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        root.appendChild(section);
+      });
+    }
+
+    // ===== DOT NAV + SCROLL =====
+    const dotNav = document.getElementById('dotNav');
+
+    function getSectionIds(){ return ['home', ...(window.familyMembers || []).map(m => m.id), 'thanks']; }
+
+    function buildDotNav(){
+      dotNav.innerHTML = '';
+      getSectionIds().forEach((id, i) => {
+        const a = document.createElement('a');
+        a.href = `#${id}`;
+        a.title = id.replace(/-/g, ' ');
+        a.setAttribute('aria-label', `Go to ${a.title}`);
+        if (i === 0) a.classList.add('active');
+        dotNav.appendChild(a);
+      });
+    }
+
+    let io;
+    function initScrollObservers(){
+      if (io) io.disconnect();
+      const panels = document.querySelectorAll('section.panel');
+      io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            setActiveDot(entry.target.id);
+            // Keep location hash in sync without jumping
+            if (location.hash !== '#' + entry.target.id) {
+              history.replaceState(null, '', '#' + entry.target.id);
+            }
+          }
+        });
+      }, { threshold: 0.6 });
+      panels.forEach(p => io.observe(p));
+    }
+
+    function setActiveDot(id) {
+      [...dotNav.querySelectorAll('a')].forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === `#${id}`);
+      });
+    }
+
+    function focusSection(delta) {
+      const sectionIds = getSectionIds();
+      const id = location.hash?.substring(1) || 'home';
+      const idx = sectionIds.indexOf(id);
+      const next = Math.min(sectionIds.length - 1, Math.max(0, idx + delta));
+      document.getElementById(sectionIds[next])?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.pushState(null, '', '#' + sectionIds[next]);
+    }
+
+    // Make hash links scroll the inner <main>
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href^="#"]');
+      if (!link) return;
+      const id = link.getAttribute('href').slice(1);
+      if (!id) return;
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.pushState(null, '', '#' + id);
+    });
+
+    // Sync on back/forward
+    window.addEventListener('hashchange', () => {
+      const id = location.hash.slice(1);
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (id) setActiveDot(id);
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowDown', 'PageDown', 'Space'].includes(e.key)) { e.preventDefault(); focusSection(+1); }
+      if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); focusSection(-1); }
+      if (e.key === 'Home') { e.preventDefault(); document.getElementById('home').scrollIntoView({ behavior: 'smooth' }); history.pushState(null, '', '#home'); }
+      if (e.key === 'End') { e.preventDefault(); document.getElementById('thanks').scrollIntoView({ behavior: 'smooth' }); history.pushState(null, '', '#thanks'); }
+    });
+
+    // ===== INIT =====
+    buildDotNav();
+    applyLang(currentLang);
+
+    window.addEventListener('load', () => {
+      const id = location.hash.substring(1) || 'home';
+      document.getElementById(id)?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      // Make sure button outlines match the actual background on first paint
+      if (window.__updateButtonsContrast) window.__updateButtonsContrast();
+      try { updateCtlVars(); } catch(e) {}
+      try { updateThemeColor(); } catch(e) {}
+    });
+  
+// Keyboard shortcuts: 't' toggles theme, 'l' cycles language (en/he)
+document.addEventListener('keydown', (e) => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+  if (e.key.toLowerCase() === 't') {
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.click();
+  }
+  if (e.key.toLowerCase() === 'l') {
+    const next = (currentLang === 'en') ? 'he' : 'en';
+    applyLang(next);
+  }
+});
+
+  </script>
+</body>
+</html>

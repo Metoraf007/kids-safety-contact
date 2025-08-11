@@ -1,0 +1,57 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>QR Generator (Local)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; width: 220px; }
+    .qr { display: grid; place-items: center; padding: .5rem; }
+    label { display:block; font-weight:600; margin-top:.5rem; }
+    textarea { width:100%; padding:.5rem; border-radius:.5rem; border:1px solid #ccc; }
+    button { margin-top: 1rem; padding:.5rem .75rem; border-radius:.5rem; border:1px solid #444; background:#fff; cursor:pointer; }
+    @media print {
+      .controls { display: none; }
+      .card { border: none; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-GQ2G2K6oFQ5RxTTOWeo8ksz2z8t+7qMmwqJQF+7R4dNuBy9cS2b6i5rvFXD5szW6x6NQkf2Gg5B1zL6lTQ3GZg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <div class="controls">
+    <h1>QR Generator</h1>
+    <p>Enter URLs or phone links (e.g., <code>https://yoursite/#home</code>, <code>tel:+9725XXXXXXXX</code>, or WhatsApp links).</p>
+    <label>One value per line</label>
+    <textarea id="values" rows="6"></textarea>
+    <div>
+      <button onclick="generate()">Generate</button>
+      <button onclick="window.print()">Print</button>
+    </div>
+  </div>
+  <div id="grid" class="row"></div>
+  <script>
+    function generate(){
+      const grid = document.getElementById('grid');
+      grid.innerHTML='';
+      const lines = document.getElementById('values').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      for(const val of lines){
+        const card = document.createElement('div');
+        card.className='card';
+        const qrEl = document.createElement('div');
+        qrEl.className='qr';
+        card.appendChild(qrEl);
+        const label = document.createElement('div');
+        label.textContent = val;
+        label.style.fontSize='12px';
+        label.style.wordBreak='break-all';
+        card.appendChild(label);
+        grid.appendChild(card);
+        new QRCode(qrEl, { text: val, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      }
+    }
+  </script>
+</body>
+</html>
