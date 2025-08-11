@@ -3,55 +3,250 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>QR Generator (Local)</title>
+  <title>QR Generator – Kids Safety Labels</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; }
-    .row { display: flex; flex-wrap: wrap; gap: 1rem; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; width: 220px; }
-    .qr { display: grid; place-items: center; padding: .5rem; }
-    label { display:block; font-weight:600; margin-top:.5rem; }
-    textarea { width:100%; padding:.5rem; border-radius:.5rem; border:1px solid #ccc; }
-    button { margin-top: 1rem; padding:.5rem .75rem; border-radius:.5rem; border:1px solid #444; background:#fff; cursor:pointer; }
-    @media print {
-      .controls { display: none; }
-      .card { border: none; }
+    :root{ --bg: #fff; --fg:#111; --muted:#666; --card:#f7f7f9; --border:#ddd; }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0e1015; --fg:#eaeef3; --muted:#aab3bf; --card:#111420; --border:#2a3140; }
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--card),transparent)}
+    header h1{margin:0;font-size:1.1rem}
+    .wrap{display:grid;grid-template-columns: 1fr 2fr;gap:1rem;padding:1rem;align-items:start}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem}
+    .panel h2{margin:.25rem 0 .75rem;font-size:1rem}
+    .row{display:grid;grid-template-columns: repeat(2,minmax(0,1fr));gap:.5rem}
+    .row3{display:grid;grid-template-columns: repeat(3,minmax(0,1fr));gap:.5rem}
+    label{font-size:.9rem;color:var(--muted)}
+    input,select,textarea{width:100%;border:1px solid var(--border);background:transparent;color:var(--fg);border-radius:10px;padding:.5rem .6rem}
+    textarea{min-height:6rem}
+    .small{font-size:.8rem;color:var(--muted)}
+    .btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem}
+    button{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:10px;padding:.5rem .8rem;cursor:pointer}
+    button.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+    #grid{display:grid;grid-template-columns: repeat(auto-fill, minmax(200px,1fr));gap:1rem}
+    .card{border:1px solid var(--border);border-radius:12px;padding:.75rem;background:var(--bg)}
+    .qr{display:grid;place-items:center}
+    .meta{margin-top:.5rem;font-size:.8rem;color:var(--muted);word-break:break-all}
+    .preview{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+    .preview .qr{width:64px;height:64px}
+    .foot{padding:0 1rem 1rem;color:var(--muted);font-size:.85rem}
+    .row > div, .row3 > div{display:flex;flex-direction:column;gap:.25rem}
+    .inline{display:flex;gap:.5rem;align-items:center}
+    .inline > *{flex:1}
+    .checkbox{display:flex;align-items:center;gap:.5rem}
+    .muted{color:var(--muted)}
+    @media (max-width: 980px){ .wrap{grid-template-columns: 1fr} }
+    @media print{
+      header, .controls, .foot { display:none !important; }
+      body{ background:#fff; color:#000; }
+      .wrap{ display:block; padding:0; }
+      .panel{ border:none; padding:0; background:#fff;}
+      #grid{ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:.5rem; }
+      .card{ border:1px solid #999; }
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-GQ2G2K6oFQ5RxTTOWeo8ksz2z8t+7qMmwqJQF+7R4dNuBy9cS2b6i5rvFXD5szW6x6NQkf2Gg5B1zL6lTQ3GZg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- QRCode.js via CDN (client-side only). If you need fully offline, vendor this file locally. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+          integrity="sha512-GQ2G2K6oFQ5RxTTOWeo8ksz2z8t+7qMmwqJQF+7R4dNuBy9cS2b6i5rvFXD5szW6x6NQkf2Gg5B1zL6lTQ3GZg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-  <div class="controls">
-    <h1>QR Generator</h1>
-    <p>Enter URLs or phone links (e.g., <code>https://yoursite/#home</code>, <code>tel:+9725XXXXXXXX</code>, or WhatsApp links).</p>
-    <label>One value per line</label>
-    <textarea id="values" rows="6"></textarea>
-    <div>
-      <button onclick="generate()">Generate</button>
-      <button onclick="window.print()">Print</button>
+  <header class="controls">
+    <h1>QR Generator – Kids Safety Labels</h1>
+  </header>
+
+  <div class="wrap">
+    <div class="panel">
+      <h2>Inputs</h2>
+      <div class="row">
+        <div>
+          <label>Mode</label>
+          <select id="mode">
+            <option value="raw">Raw (use lines as-is)</option>
+            <option value="url">URL + values (prefix lines with URL)</option>
+            <option value="tel">Phone numbers (build tel: links)</option>
+            <option value="wa">WhatsApp (build wa.me links)</option>
+          </select>
+        </div>
+        <div id="urlRow" style="display:none">
+          <label>URL prefix (for URL mode)</label>
+          <input id="urlPrefix" placeholder="https://example.github.io/kids-safety-contact/">
+        </div>
+      </div>
+
+      <div id="waRow" class="row" style="display:none">
+        <div>
+          <label>WhatsApp message (optional)</label>
+          <input id="waMsg" placeholder="Found a child, please help.">
+        </div>
+        <div>
+          <label>Country code (no +)</label>
+          <input id="waCC" value="972">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Label text (optional, supports {value})</label>
+          <input id="labelTpl" placeholder="Scan to contact – {value}">
+        </div>
+        <div>
+          <label>Prefix/Suffix for each line (optional)</label>
+          <div class="inline">
+            <input id="linePrefix" placeholder="prefix">
+            <input id="lineSuffix" placeholder="suffix">
+          </div>
+          <div class="small muted">Applied before building the QR link (except in URL/Tel/WA modes where composition happens first).</div>
+        </div>
+      </div>
+
+      <div>
+        <label>Values (one per line)</label>
+        <textarea id="values" placeholder="Paste your lines here..."></textarea>
+      </div>
+
+      <h2>Options</h2>
+      <div class="row3">
+        <div>
+          <label>QR size (px)</label>
+          <input id="size" type="number" value="180" min="64" max="1024">
+        </div>
+        <div>
+          <label>Error correction</label>
+          <select id="ecc">
+            <option value="L">L (smallest)</option>
+            <option value="M" selected>M</option>
+            <option value="Q">Q</option>
+            <option value="H">H (largest)</option>
+          </select>
+        </div>
+        <div>
+          <label>Columns</label>
+          <input id="cols" type="number" value="0" min="0" max="6">
+          <div class="small muted">0 = auto-fit</div>
+        </div>
+      </div>
+
+      <div class="checkbox">
+        <input id="showText" type="checkbox" checked>
+        <label for="showText">Show label text under QR</label>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="generate()">Generate</button>
+        <button onclick="clearGrid()">Clear</button>
+        <button onclick="window.print()">Print</button>
+      </div>
+
+      <div class="preview small muted">
+        <div class="qr" id="previewQR"></div>
+        <div>Tip: For “URL + values”, lines like <code>#member-1</code>, <code>#member-2</code> will be prefixed with your site URL.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Output</h2>
+      <div id="grid"></div>
     </div>
   </div>
-  <div id="grid" class="row"></div>
+
+  <div class="foot controls">All client-side. Nothing is uploaded. If you need fully offline, vendor <code>qrcode.min.js</code> locally.</div>
+
   <script>
-    function generate(){
-      const grid = document.getElementById('grid');
-      grid.innerHTML='';
-      const lines = document.getElementById('values').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-      for(const val of lines){
-        const card = document.createElement('div');
-        card.className='card';
-        const qrEl = document.createElement('div');
-        qrEl.className='qr';
-        card.appendChild(qrEl);
-        const label = document.createElement('div');
-        label.textContent = val;
-        label.style.fontSize='12px';
-        label.style.wordBreak='break-all';
-        card.appendChild(label);
-        grid.appendChild(card);
-        new QRCode(qrEl, { text: val, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-      }
+    const el = id => document.getElementById(id);
+    const modeSel = el('mode'), urlRow = el('urlRow'), waRow = el('waRow');
+
+    modeSel.addEventListener('change', () => {
+      urlRow.style.display = (modeSel.value === 'url') ? '' : 'none';
+      waRow.style.display  = (modeSel.value === 'wa')  ? '' : 'none';
+      renderPreview();
+    });
+
+    ['urlPrefix','waMsg','waCC','labelTpl','linePrefix','lineSuffix','size','ecc','cols','values'].forEach(id=>{
+      const x = el(id); if (!x) return;
+      x.addEventListener('input', debounce(renderPreview, 150));
+    });
+    el('showText').addEventListener('change', renderPreview);
+
+    function sanitizePhone(s){
+      // remove spaces, dashes, parentheses, keep leading + or digits
+      s = (s||'').trim();
+      s = s.replace(/[^0-9+]/g,'');
+      if(s.startsWith('00')) s = '+'+s.slice(2);
+      return s;
     }
+
+    function buildLink(raw){
+      const mode = modeSel.value;
+      const pre = el('linePrefix').value || '';
+      const suf = el('lineSuffix').value || '';
+
+      if(mode === 'raw'){
+        return pre + raw + suf;
+      }
+      if(mode === 'url'){
+        const base = (el('urlPrefix').value || '').trim();
+        return pre + base + raw + suf;
+      }
+      if(mode === 'tel'){
+        const num = sanitizePhone(raw);
+        return pre + 'tel:' + num + suf;
+      }
+      if(mode === 'wa'){
+        const num = sanitizePhone(raw).replace(/^[+]/,'');
+        const cc  = (el('waCC').value || '').replace(/[^0-9]/g,'');
+        const msg = encodeURIComponent(el('waMsg').value || '');
+        const phone = (num.startsWith(cc) ? num : (cc + num));
+        return pre + `https://wa.me/${phone}${msg ? ('?text=' + msg) : ''}` + suf;
+      }
+      return raw;
+    }
+
+    function generate(){
+      clearGrid();
+      const size = parseInt(el('size').value,10) || 180;
+      const eccMap = {L:QRCode.CorrectLevel.L, M:QRCode.CorrectLevel.M, Q:QRCode.CorrectLevel.Q, H:QRCode.CorrectLevel.H};
+      const ecc = eccMap[el('ecc').value] || QRCode.CorrectLevel.M;
+      const labelTpl = el('labelTpl').value || '';
+      const showText = el('showText').checked;
+      const lines = (el('values').value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+
+      const grid = el('grid');
+      for(const raw of lines){
+        const link = buildLink(raw);
+        const card = document.createElement('div'); card.className='card';
+        const qrEl = document.createElement('div'); qrEl.className='qr'; qrEl.style.width=qrEl.style.height=size+'px';
+        card.appendChild(qrEl);
+        new QRCode(qrEl, { text: link, width: size, height: size, correctLevel: ecc });
+
+        if(showText){
+          const lbl = document.createElement('div'); lbl.className='meta';
+          lbl.textContent = (labelTpl ? labelTpl.replaceAll('{value}', raw) : link);
+          card.appendChild(lbl);
+        }
+        grid.appendChild(card);
+      }
+
+      // columns override
+      const cols = parseInt(el('cols').value,10) || 0;
+      grid.style.gridTemplateColumns = cols > 0 ? `repeat(${cols}, minmax(${Math.max(160, size+20)}px, 1fr))` : 'repeat(auto-fill, minmax(200px,1fr))';
+      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+    }
+
+    function clearGrid(){ el('grid').innerHTML=''; }
+    function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait);} }
+
+    function renderPreview(){
+      const q = el('previewQR'); q.innerHTML='';
+      const link = buildLink('{value}');
+      new QRCode(q, { text: String(link), width:64, height:64, correctLevel: QRCode.CorrectLevel.M });
+    }
+
+    // init
+    renderPreview();
   </script>
 </body>
 </html>
