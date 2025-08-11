@@ -1,15 +1,14 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>QR Generator – Kids Safety Labels</title>
+  <title>QR Generator – Kids Safety Labels (Local)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <style>
-    :root{ --bg: #fff; --fg:#111; --muted:#666; --card:#f7f7f9; --border:#ddd; }
+    :root{ --bg:#fff; --fg:#111; --muted:#666; --card:#f7f7f9; --border:#ddd; --accent:#0b5ed7; }
     @media (prefers-color-scheme: dark){
-      :root{ --bg:#0e1015; --fg:#eaeef3; --muted:#aab3bf; --card:#111420; --border:#2a3140; }
+      :root{ --bg:#0e1015; --fg:#eaeef3; --muted:#aab3bf; --card:#111420; --border:#2a3140; --accent:#5aa2ff; }
     }
     html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
     header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--card),transparent)}
@@ -38,6 +37,8 @@
     .inline > *{flex:1}
     .checkbox{display:flex;align-items:center;gap:.5rem}
     .muted{color:var(--muted)}
+    .alert{display:none; background: color-mix(in oklab, var(--accent) 20%, transparent); border:1px solid var(--border); padding:.75rem; border-radius:12px; margin:1rem; }
+    .alert a{ color:var(--fg); }
     @media (max-width: 980px){ .wrap{grid-template-columns: 1fr} }
     @media print{
       header, .controls, .foot { display:none !important; }
@@ -48,15 +49,19 @@
       .card{ border:1px solid #999; }
     }
   </style>
-  <!-- QRCode.js via CDN (client-side only). If you need fully offline, vendor this file locally. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-          integrity="sha512-GQ2G2K6oFQ5RxTTOWeo8ksz2z8t+7qMmwqJQF+7R4dNuBy9cS2b6i5rvFXD5szW6x6NQkf2Gg5B1zL6lTQ3GZg=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
   <header class="controls">
-    <h1>QR Generator – Kids Safety Labels</h1>
+    <h1>QR Generator – Kids Safety Labels (Local)</h1>
   </header>
+
+  <div id="alert" class="alert">
+    <strong>Heads up:</strong> the QR library didn’t load.
+    If you’re offline or opening this from your file system, put <code>qrcode.min.js</code> next to this file and refresh, or start a local server:
+    <pre>python -m http.server 5500</pre>
+    Then open <code>http://localhost:5500/qr_generator.local.html</code>
+    <div>Download library: <a href="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" target="_blank" rel="noopener">qrcode.min.js</a></div>
+  </div>
 
   <div class="wrap">
     <div class="panel">
@@ -136,8 +141,8 @@
       </div>
 
       <div class="btns">
-        <button class="primary" onclick="generate()">Generate</button>
-        <button onclick="clearGrid()">Clear</button>
+        <button class="primary" id="btnGen">Generate</button>
+        <button id="btnClear">Clear</button>
         <button onclick="window.print()">Print</button>
       </div>
 
@@ -153,100 +158,96 @@
     </div>
   </div>
 
-  <div class="foot controls">All client-side. Nothing is uploaded. If you need fully offline, vendor <code>qrcode.min.js</code> locally.</div>
+  <div class="foot controls">All client-side. Nothing is uploaded. If you need fully offline, drop <code>qrcode.min.js</code> next to this file.</div>
 
   <script>
-    const el = id => document.getElementById(id);
-    const modeSel = el('mode'), urlRow = el('urlRow'), waRow = el('waRow');
+    // Dynamically load the QR library: CDN first, then local fallback, otherwise show help banner.
+    (function ensureQRLib(init){
+      function ok(){ init(); }
+      function fail(){ document.getElementById('alert').style.display='block'; }
+      function tryLocal(){
+        var s=document.createElement('script');
+        s.src='qrcode.min.js'; s.onload=ok; s.onerror=fail; document.head.appendChild(s);
+      }
+      var s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      s.onload=ok; s.onerror=tryLocal; document.head.appendChild(s);
+    })(function init(){
+      const el = id => document.getElementById(id);
+      const modeSel = el('mode'), urlRow = el('urlRow'), waRow = el('waRow');
+      const btnGen = el('btnGen'), btnClear = el('btnClear');
 
-    modeSel.addEventListener('change', () => {
-      urlRow.style.display = (modeSel.value === 'url') ? '' : 'none';
-      waRow.style.display  = (modeSel.value === 'wa')  ? '' : 'none';
+      function sanitizePhone(s){
+        s = (s||'').trim();
+        s = s.replace(/[^0-9+]/g,'');
+        if(s.startsWith('00')) s = '+'+s.slice(2);
+        return s;
+      }
+      function buildLink(raw){
+        const mode = modeSel.value;
+        const pre = (el('linePrefix').value || '');
+        const suf = (el('lineSuffix').value || '');
+        if(mode === 'raw'){ return pre + raw + suf; }
+        if(mode === 'url'){ const base = (el('urlPrefix').value || '').trim(); return pre + base + raw + suf; }
+        if(mode === 'tel'){ const num = sanitizePhone(raw); return pre + 'tel:' + num + suf; }
+        if(mode === 'wa'){
+          const num = sanitizePhone(raw).replace(/^[+]/,'');
+          const cc  = (el('waCC').value || '').replace(/[^0-9]/g,'');
+          const msg = encodeURIComponent(el('waMsg').value || '');
+          const phone = (num.startsWith(cc) ? num : (cc + num));
+          return pre + 'https://wa.me/' + phone + (msg ? ('?text=' + msg) : '') + suf;
+        }
+        return raw;
+      }
+      function clearGrid(){ el('grid').innerHTML=''; }
+      function generate(){
+        clearGrid();
+        const size = parseInt(el('size').value,10) || 180;
+        const eccMap = {L:QRCode.CorrectLevel.L, M:QRCode.CorrectLevel.M, Q:QRCode.CorrectLevel.Q, H:QRCode.CorrectLevel.H};
+        const ecc = eccMap[el('ecc').value] || QRCode.CorrectLevel.M;
+        const labelTpl = el('labelTpl').value || '';
+        const showText = el('showText').checked;
+        const lines = (el('values').value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+        const grid = el('grid');
+        for(const raw of lines){
+          const link = buildLink(raw);
+          const card = document.createElement('div'); card.className='card';
+          const qrEl = document.createElement('div'); qrEl.className='qr'; qrEl.style.width=qrEl.style.height=size+'px';
+          card.appendChild(qrEl);
+          new QRCode(qrEl, { text: link, width: size, height: size, correctLevel: ecc });
+          if(showText){
+            const lbl = document.createElement('div'); lbl.className='meta';
+            lbl.textContent = (labelTpl ? labelTpl.replaceAll('{value}', raw) : link);
+            card.appendChild(lbl);
+          }
+          grid.appendChild(card);
+        }
+        const cols = parseInt(el('cols').value,10) || 0;
+        grid.style.gridTemplateColumns = cols > 0 ? 'repeat(' + cols + ', minmax(' + Math.max(160, size+20) + 'px, 1fr))' : 'repeat(auto-fill, minmax(200px,1fr))';
+        try{ window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}); } catch(e){}
+      }
+      function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait);} }
+      function renderPreview(){
+        const q = el('previewQR'); q.innerHTML='';
+        const link = buildLink('{value}');
+        new QRCode(q, { text: String(link), width:64, height:64, correctLevel: QRCode.CorrectLevel.M });
+      }
+
+      modeSel.addEventListener('change', () => {
+        urlRow.style.display = (modeSel.value === 'url') ? '' : 'none';
+        waRow.style.display  = (modeSel.value === 'wa')  ? '' : 'none';
+        renderPreview();
+      });
+      ['urlPrefix','waMsg','waCC','labelTpl','linePrefix','lineSuffix','size','ecc','cols','values'].forEach(id=>{
+        const x = el(id); if (!x) return;
+        x.addEventListener('input', debounce(renderPreview, 150));
+      });
+      el('showText').addEventListener('change', renderPreview);
+      btnGen.addEventListener('click', generate);
+      btnClear.addEventListener('click', clearGrid);
+
       renderPreview();
     });
-
-    ['urlPrefix','waMsg','waCC','labelTpl','linePrefix','lineSuffix','size','ecc','cols','values'].forEach(id=>{
-      const x = el(id); if (!x) return;
-      x.addEventListener('input', debounce(renderPreview, 150));
-    });
-    el('showText').addEventListener('change', renderPreview);
-
-    function sanitizePhone(s){
-      // remove spaces, dashes, parentheses, keep leading + or digits
-      s = (s||'').trim();
-      s = s.replace(/[^0-9+]/g,'');
-      if(s.startsWith('00')) s = '+'+s.slice(2);
-      return s;
-    }
-
-    function buildLink(raw){
-      const mode = modeSel.value;
-      const pre = el('linePrefix').value || '';
-      const suf = el('lineSuffix').value || '';
-
-      if(mode === 'raw'){
-        return pre + raw + suf;
-      }
-      if(mode === 'url'){
-        const base = (el('urlPrefix').value || '').trim();
-        return pre + base + raw + suf;
-      }
-      if(mode === 'tel'){
-        const num = sanitizePhone(raw);
-        return pre + 'tel:' + num + suf;
-      }
-      if(mode === 'wa'){
-        const num = sanitizePhone(raw).replace(/^[+]/,'');
-        const cc  = (el('waCC').value || '').replace(/[^0-9]/g,'');
-        const msg = encodeURIComponent(el('waMsg').value || '');
-        const phone = (num.startsWith(cc) ? num : (cc + num));
-        return pre + `https://wa.me/${phone}${msg ? ('?text=' + msg) : ''}` + suf;
-      }
-      return raw;
-    }
-
-    function generate(){
-      clearGrid();
-      const size = parseInt(el('size').value,10) || 180;
-      const eccMap = {L:QRCode.CorrectLevel.L, M:QRCode.CorrectLevel.M, Q:QRCode.CorrectLevel.Q, H:QRCode.CorrectLevel.H};
-      const ecc = eccMap[el('ecc').value] || QRCode.CorrectLevel.M;
-      const labelTpl = el('labelTpl').value || '';
-      const showText = el('showText').checked;
-      const lines = (el('values').value||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-
-      const grid = el('grid');
-      for(const raw of lines){
-        const link = buildLink(raw);
-        const card = document.createElement('div'); card.className='card';
-        const qrEl = document.createElement('div'); qrEl.className='qr'; qrEl.style.width=qrEl.style.height=size+'px';
-        card.appendChild(qrEl);
-        new QRCode(qrEl, { text: link, width: size, height: size, correctLevel: ecc });
-
-        if(showText){
-          const lbl = document.createElement('div'); lbl.className='meta';
-          lbl.textContent = (labelTpl ? labelTpl.replaceAll('{value}', raw) : link);
-          card.appendChild(lbl);
-        }
-        grid.appendChild(card);
-      }
-
-      // columns override
-      const cols = parseInt(el('cols').value,10) || 0;
-      grid.style.gridTemplateColumns = cols > 0 ? `repeat(${cols}, minmax(${Math.max(160, size+20)}px, 1fr))` : 'repeat(auto-fill, minmax(200px,1fr))';
-      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
-    }
-
-    function clearGrid(){ el('grid').innerHTML=''; }
-    function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait);} }
-
-    function renderPreview(){
-      const q = el('previewQR'); q.innerHTML='';
-      const link = buildLink('{value}');
-      new QRCode(q, { text: String(link), width:64, height:64, correctLevel: QRCode.CorrectLevel.M });
-    }
-
-    // init
-    renderPreview();
   </script>
 </body>
 </html>
